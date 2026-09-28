@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, House, Menu, UserRound, X } from "lucide-react";
+import { Building2, Menu, UserRound, X } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ErrorMessage } from "./Feedback";
@@ -30,8 +30,7 @@ export function SiteLayout() {
         {logoutError && <div className="container pt-2"><ErrorMessage>{logoutError}</ErrorMessage></div>}
         <nav className="site-nav container" aria-label="Main navigation">
           <Link className="brand d-flex align-items-center gap-2" to="/">
-            <span className="brand-mark"><House size={19} strokeWidth={2.4} /></span>
-            haven<span className="brand-period">.</span>
+            haven
           </Link>
           <button
             className="mobile-nav-toggle"

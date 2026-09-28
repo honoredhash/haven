@@ -41,7 +41,7 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
     <main className="auth-page">
       <section className="auth-card">
         <Link to="/" className="auth-back"><ArrowLeft size={16} /> Back to Haven</Link>
-        <Link to="/" className="brand auth-brand"><span className="brand-mark"><House size={19} /></span>haven<span className="brand-period">.</span></Link>
+        <Link to="/" className="brand auth-brand">haven</Link>
         <span className="section-kicker">{registering ? "MAKE YOURSELF AT HOME" : "WELCOME BACK"}</span>
         <h1>{registering ? "Find your place here." : "Good to have you back."}</h1>
         <p>{registering ? "Create an account to find a home or share yours." : "Sign in to continue your property journey."}</p>

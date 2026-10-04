@@ -72,6 +72,15 @@ export interface Property {
   updatedAt: string;
 }
 
+export interface InquiryMessage {
+  id: string;
+  inquiryId: string;
+  senderId: string;
+  message: string;
+  createdAt: string;
+  sender: Pick<User, "id" | "name" | "role">;
+}
+
 export interface Inquiry {
   id: string;
   propertyId: string;
@@ -83,4 +92,5 @@ export interface Inquiry {
     images?: PropertyImage[];
   };
   user?: Pick<User, "id" | "name" | "email">;
+  messages?: InquiryMessage[];
 }

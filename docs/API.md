@@ -41,9 +41,14 @@ Property create/update fields: `title`, `description`, `propertyType`, `listingT
 | POST | `/properties/:id/inquiries` | Send an inquiry to a property's owner | Seeker |
 | GET | `/inquiries` | Get the signed-in seeker's inquiry history | Seeker |
 | GET | `/owner/inquiries` | Get inquiries for the signed-in owner's properties | Owner |
+| POST | `/inquiries/:id/messages` | Send a message in an inquiry conversation | Inquiry seeker or property owner |
 | PATCH | `/inquiries/:id` | Update an inquiry status | Relevant owner |
 
-Inquiry body: `{ "message": "Is this property available for viewing?" }`.
+Inquiry and reply body: `{ "message": "Is this property available for viewing?" }` (10–2000 characters).
+Both inquiry-list endpoints include each inquiry's ordered `messages` and sender details.
+Only the inquiry's seeker and property owner may reply. Closed inquiries cannot receive
+messages; the owner can reopen one by changing its status. An owner's first reply moves
+a `NEW` inquiry to `CONTACTED`.
 Status update body: `{ "status": "CONTACTED" }` (`NEW`, `CONTACTED`, or `CLOSED`).
 
 ## Common responses

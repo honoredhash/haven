@@ -4,7 +4,7 @@ import { HttpError } from "../lib/http-error.js";
 import { prisma } from "../lib/prisma.js";
 import { sendSuccess } from "../lib/response.js";
 import { getAuthUser, requireAuth, requireRole } from "../middleware/auth.js";
-import { inquirySchema, inquiryStatusSchema, propertyIdSchema } from "../schemas/index.js";
+import { inquiryMessageSchema, inquirySchema, inquiryStatusSchema, propertyIdSchema } from "../schemas/index.js";
 
 const userRouter = Router();
 const ownerRouter = Router();
@@ -55,6 +55,10 @@ userRouter.get("/inquiries", requireAuth, requireRole("SEEKER"), asyncHandler(as
           listingType: true,
           images: { orderBy: { position: "asc" }, take: 1 }
         }
+      },
+      messages: {
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        include: { sender: { select: { id: true, name: true, role: true } } }
       }
     },
     orderBy: { createdAt: "desc" }
@@ -73,11 +77,56 @@ ownerRouter.get("/owner/inquiries", requireAuth, requireRole("OWNER"), asyncHand
     where: { property: { ownerId } },
     include: {
       user: { select: { id: true, name: true, email: true } },
-      property: { select: { id: true, title: true, location: true } }
+      property: { select: { id: true, title: true, location: true } },
+      messages: {
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        include: { sender: { select: { id: true, name: true, role: true } } }
+      }
     },
     orderBy: { createdAt: "desc" }
   });
   sendSuccess(response, "Property inquiries were retrieved", { items: inquiries });
+}));
+
+userRouter.post("/inquiries/:id/messages", requireAuth, asyncHandler(async (request, response) => {
+  const id = validateInquiryId(request.params.id);
+  const { id: userId, role } = getAuthUser(request);
+  const input = inquiryMessageSchema.parse(request.body);
+  const inquiry = await prisma.inquiry.findUnique({
+    where: { id },
+    include: { property: { select: { ownerId: true } } }
+  });
+  if (!inquiry) throw new HttpError(404, "Inquiry not found");
+  if (role === "OWNER" && inquiry.property.ownerId !== userId) {
+    throw new HttpError(403, "You can only reply to inquiries for your properties");
+  }
+  if (role === "SEEKER" && inquiry.userId !== userId) {
+    throw new HttpError(403, "You can only reply to your own inquiries");
+  }
+
+  const result = await prisma.$transaction(async (transaction) => {
+    const current = await transaction.inquiry.findUnique({
+      where: { id },
+      select: { status: true }
+    });
+    if (!current) throw new HttpError(404, "Inquiry not found");
+    if (current.status === "CLOSED") throw new HttpError(409, "This inquiry is closed");
+
+    const message = await transaction.inquiryMessage.create({
+      data: { inquiryId: id, senderId: userId, message: input.message },
+      include: { sender: { select: { id: true, name: true, role: true } } }
+    });
+    const status = role === "OWNER" && current.status === "NEW"
+      ? (await transaction.inquiry.update({
+        where: { id },
+        data: { status: "CONTACTED" },
+        select: { status: true }
+      })).status
+      : current.status;
+    return { message, status };
+  });
+
+  sendSuccess(response, "Your message was sent", result, 201);
 }));
 
 ownerRouter.patch("/inquiries/:id", requireAuth, requireRole("OWNER"), asyncHandler(async (request, response) => {

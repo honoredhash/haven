@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Building2, CirclePlus, Mail, Pencil, Plus, Trash2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { api, apiRequest, getErrorMessage } from "../services/api";
-import type { Inquiry, Property } from "../services/api";
+import type { Inquiry, InquiryMessage, Property } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { InquiryConversation } from "../components/InquiryConversation";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorMessage, LoadingState, SuccessMessage } from "../components/Feedback";
 import { formatPrice, PropertyCard } from "../components/PropertyCard";
@@ -23,10 +24,27 @@ export function SeekerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
-    apiRequest<InquiryData>(api.get("/inquiries"))
-      .then(setData).catch((reason: unknown) => setError(getErrorMessage(reason)))
-      .finally(() => setLoading(false));
+    const loadInquiries = () => apiRequest<InquiryData>(api.get("/inquiries"))
+      .then(setData).catch((reason: unknown) => setError(getErrorMessage(reason)));
+    void loadInquiries().finally(() => setLoading(false));
+    const refresh = () => {
+      if (document.visibilityState === "visible") void loadInquiries();
+    };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
   }, []);
+  function appendMessage(inquiryId: string, message: InquiryMessage, status: Inquiry["status"]) {
+    setData((current) => current ? {
+      ...current,
+      items: current.items.map((item) => item.id === inquiryId
+        ? { ...item, status, messages: [...(item.messages ?? []), message] }
+        : item)
+    } : current);
+  }
   return (
     <PageContainer>
       <DashboardHeading eyebrow="YOUR HAVEN" title={`Hello, ${user?.name.split(" ")[0] ?? "there"}.`}
@@ -43,13 +61,17 @@ export function SeekerDashboard() {
         {error && <ErrorMessage>{error}</ErrorMessage>}
         {!loading && !error && !data?.items.length && <div className="empty-state"><h3>No inquiries yet</h3>
           <p>When a home catches your eye, send the owner a note.</p><Link to="/properties" className="btn btn-dark rounded-pill">Explore homes</Link></div>}
-        {!!data?.items.length && <div className="inquiry-list">{data.items.map((inquiry) => (
-          <article className="inquiry-row" key={inquiry.id}>
-            <div className="inquiry-thumb">{inquiry.property.images?.[0] && <img src={inquiry.property.images[0].url} alt="" />}</div>
-            <div className="inquiry-main"><Link to={`/properties/${inquiry.property.id}`}><strong>{inquiry.property.title}</strong></Link>
-              <span>{inquiry.property.location} · {formatPrice(Number(inquiry.property.price))}</span>
-              <p>{inquiry.message}</p><time dateTime={inquiry.createdAt}>{new Date(inquiry.createdAt).toLocaleDateString()}</time></div>
-            <span className={`status-pill status-${inquiry.status.toLowerCase()}`}>{inquiry.status.toLowerCase()}</span>
+        {!!data?.items.length && <div className="inquiry-list seeker-inquiry-list">{data.items.map((inquiry) => (
+          <article className="seeker-inquiry-card" key={inquiry.id}>
+            <div className="inquiry-row">
+              <div className="inquiry-thumb">{inquiry.property.images?.[0] && <img src={inquiry.property.images[0].url} alt="" />}</div>
+              <div className="inquiry-main"><Link to={`/properties/${inquiry.property.id}`}><strong>{inquiry.property.title}</strong></Link>
+                <span>{inquiry.property.location} · {formatPrice(Number(inquiry.property.price))}</span>
+                <time dateTime={inquiry.createdAt}>{new Date(inquiry.createdAt).toLocaleDateString()}</time></div>
+              <span className={`status-pill status-${inquiry.status.toLowerCase()}`}>{inquiry.status.toLowerCase()}</span>
+            </div>
+            {user && <InquiryConversation inquiry={inquiry} user={user}
+              onUpdated={(message, status) => appendMessage(inquiry.id, message, status)} />}
           </article>
         ))}</div>}
       </section>

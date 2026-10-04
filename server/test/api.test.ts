@@ -6,6 +6,7 @@ import type { Server } from "node:http";
 import app from "../src/app-impl.js";
 import {
   loginSchema,
+  inquiryMessageSchema,
   propertyQuerySchema,
   propertySchema,
   registerSchema
@@ -97,6 +98,37 @@ test("malformed inquiry IDs return a bad-request envelope", async () => {
   assert.equal(body.success, false);
   assert.equal(body.message, "Inquiry ID is invalid");
   assert.equal(body.data, null);
+});
+
+test("inquiry message endpoint requires authentication and rejects invalid IDs", async () => {
+  const unauthenticated = await fetch(`${baseUrl}/api/inquiries/not-valid/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "I would like to know more about the property." })
+  });
+  assert.equal(unauthenticated.status, 401);
+
+  const secret = process.env.JWT_SECRET ?? "test-only-jwt-secret-with-at-least-32-characters";
+  process.env.JWT_SECRET = secret;
+  const token = jwt.sign({ role: "OWNER" }, secret, { subject: "test-owner" });
+  const response = await fetch(`${baseUrl}/api/inquiries/not-valid/messages`, {
+    method: "POST",
+    headers: { Cookie: `session=${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "I would like to know more about the property." })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.message, "Inquiry ID is invalid");
+  assert.equal(body.data, null);
+});
+
+test("inquiry messages are trimmed and must contain 10 to 2000 characters", () => {
+  const input = inquiryMessageSchema.parse({ message: "  Could I arrange a viewing?  " });
+
+  assert.equal(input.message, "Could I arrange a viewing?");
+  assert.equal(inquiryMessageSchema.safeParse({ message: "short" }).success, false);
+  assert.equal(inquiryMessageSchema.safeParse({ message: "x".repeat(2001) }).success, false);
 });
 
 test("registration and login normalize email and require an account role", () => {

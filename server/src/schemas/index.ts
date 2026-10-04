@@ -55,6 +55,8 @@ export const inquirySchema = z.object({
   message: z.string().trim().min(10).max(2000)
 });
 
+export const inquiryMessageSchema = inquirySchema;
+
 export const inquiryStatusSchema = z.object({
   status: z.enum(["NEW", "CONTACTED", "CLOSED"])
 });

@@ -40,15 +40,16 @@ enum InquiryStatus {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  name         String
-  email        String
-  passwordHash String
-  role         UserRole   @default(SEEKER)
-  properties   Property[]
-  inquiries    Inquiry[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                  String           @id @default(cuid())
+  name                String
+  email               String
+  passwordHash        String
+  role                UserRole         @default(SEEKER)
+  properties          Property[]
+  inquiries           Inquiry[]
+  sentInquiryMessages InquiryMessage[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   @@unique([email, role])
   @@index([role])
@@ -93,17 +94,31 @@ model PropertyImage {
 }
 
 model Inquiry {
-  id         String        @id @default(cuid())
+  id         String           @id @default(cuid())
   propertyId String
   userId     String
   message    String
-  status     InquiryStatus @default(NEW)
-  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  status     InquiryStatus    @default(NEW)
+  property   Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   InquiryMessage[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@index([propertyId, createdAt])
   @@index([userId, createdAt])
   @@index([status])
+}
+
+model InquiryMessage {
+  id        String   @id @default(cuid())
+  inquiryId String
+  senderId  String
+  message   String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId, createdAt])
+  @@index([senderId, createdAt])
 }

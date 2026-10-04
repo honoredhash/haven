@@ -16,7 +16,7 @@
     },
     "server": {
       "root": "server",
-      "framework": "express",
+      "framework": "other",
       "entrypoint": "src/vercel.mjs",
       "installCommand": "npm install",
       "buildCommand": "npm run db:generate && npm run build && npm run build:vercel"

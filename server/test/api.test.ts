@@ -83,6 +83,28 @@ test("malformed JSON and property IDs return bad-request envelopes", async () =>
   assert.equal(invalidFiltersResponse.data, null);
 });
 
+test("removing a property image requires an owner and validates both IDs", async () => {
+  const unauthenticated = await fetch(
+    `${baseUrl}/api/properties/c1234567890123456789012345/images/c1234567890123456789012345`,
+    { method: "DELETE" }
+  );
+  assert.equal(unauthenticated.status, 401);
+
+  const secret = process.env.JWT_SECRET ?? "test-only-jwt-secret-with-at-least-32-characters";
+  process.env.JWT_SECRET = secret;
+  const token = jwt.sign({ role: "OWNER" }, secret, { subject: "test-owner" });
+  const response = await fetch(
+    `${baseUrl}/api/properties/not-valid/images/c1234567890123456789012345`,
+    { method: "DELETE", headers: { Cookie: `session=${token}` } }
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.success, false);
+  assert.equal(body.message, "Property ID is invalid");
+  assert.equal(body.data, null);
+});
+
 test("malformed inquiry IDs return a bad-request envelope", async () => {
   const secret = process.env.JWT_SECRET ?? "test-only-jwt-secret-with-at-least-32-characters";
   process.env.JWT_SECRET = secret;

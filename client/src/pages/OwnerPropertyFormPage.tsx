@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft, ImagePlus, X } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api, apiRequest, getErrorMessage } from "../services/api";
 import type { Property, PropertyImage } from "../services/api";
-import { ErrorMessage, LoadingState } from "../components/Feedback";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ErrorMessage, LoadingState, SuccessMessage } from "../components/Feedback";
 import { PageContainer } from "../components/SiteLayout";
 
 const blankProperty = {
@@ -29,9 +30,12 @@ export default function OwnerPropertyFormPage({ editing = false }: { editing?: b
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<PropertyImage[]>([]);
+  const [imageToDelete, setImageToDelete] = useState<PropertyImage | null>(null);
+  const [deletingImage, setDeletingImage] = useState(false);
   const [loading, setLoading] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>(location.state?.uploadError ?? "");
+  const [notice, setNotice] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   useEffect(() => {
@@ -89,34 +93,69 @@ export default function OwnerPropertyFormPage({ editing = false }: { editing?: b
 
   function selectImages(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    const uniqueSelected = selected.filter((selectedFile, selectedIndex) =>
+      selected.findIndex((file) =>
+        file.name === selectedFile.name && file.size === selectedFile.size &&
+        file.lastModified === selectedFile.lastModified
+      ) === selectedIndex
+    );
     const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
-    if (selected.length > 8) {
+    const additions = uniqueSelected.filter((selectedFile) => !files.some((file) =>
+      file.name === selectedFile.name && file.size === selectedFile.size &&
+      file.lastModified === selectedFile.lastModified
+    ));
+    if (files.length + additions.length > 8) {
       setError("Choose up to 8 images per upload.");
-      event.target.value = "";
       return;
     }
-    if (existingImages.length + selected.length > 12) {
+    if (existingImages.length + files.length + additions.length > 12) {
       setError("A property can have up to 12 images. Choose fewer images.");
-      event.target.value = "";
       return;
     }
-    if (selected.some((file) => !allowedTypes.has(file.type))) {
+    if (additions.some((file) => !allowedTypes.has(file.type))) {
       setError("Choose JPEG, PNG, WebP, or AVIF images.");
-      event.target.value = "";
       return;
     }
-    if (selected.some((file) => file.size > 5 * 1024 * 1024)) {
+    if (additions.some((file) => file.size > 5 * 1024 * 1024)) {
       setError("Each image must be 5 MB or smaller.");
-      event.target.value = "";
       return;
     }
     setError("");
-    setFiles(selected);
+    setNotice("");
+    setFiles((current) => [...current, ...additions]);
+  }
+
+  function removeSelectedImage(index: number) {
+    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
+    setError("");
+    setNotice("");
   }
 
   function clearSelectedImages() {
     setFiles([]);
     if (imageInput.current) imageInput.current.value = "";
+  }
+
+  async function removeExistingImage() {
+    if (!id || !imageToDelete || deletingImage) return;
+    setDeletingImage(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await apiRequest<{ imageId: string; cleanupWarning: boolean }>(
+        api.delete(`/properties/${id}/images/${imageToDelete.id}`)
+      );
+      setExistingImages((current) => current.filter((image) => image.id !== result.imageId));
+      setImageToDelete(null);
+      setNotice(result.cleanupWarning
+        ? "Image removed from this listing, but its stored file could not be cleaned up."
+        : "Image removed from this listing.");
+    } catch (reason) {
+      setError(getErrorMessage(reason));
+    } finally {
+      setDeletingImage(false);
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -178,6 +217,7 @@ export default function OwnerPropertyFormPage({ editing = false }: { editing?: b
       <div className="form-page-heading"><span className="section-kicker">PROPERTY LISTING</span>
         <h1>{editing ? "Edit property" : "Create a listing"}</h1>
         <p>Add the details a property seeker needs to decide whether to get in touch.</p></div>
+      {notice && <SuccessMessage>{notice}</SuccessMessage>}
       {error && <ErrorMessage>{error}</ErrorMessage>}
       <form className="property-form" onSubmit={(event) => void submit(event)}>
         <section className="form-section">
@@ -248,21 +288,33 @@ export default function OwnerPropertyFormPage({ editing = false }: { editing?: b
         </section>
         <section className="form-section">
           <h2>Property photos</h2>
-          <p>Choose up to 8 images per upload and 12 per listing. Use JPEG, PNG, WebP, or AVIF images up to 5 MB each.</p>
+          <p>Add or remove photos individually. Choose up to 8 new images at a time and keep up to 12 photos on a listing. Use JPEG, PNG, WebP, or AVIF images up to 5 MB each.</p>
           {!!existingImages.length && <div className="image-preview-grid" aria-label="Current property photos">
-            {existingImages.map((image, index) => <img key={image.id} src={image.url} alt={`Current property photo ${index + 1}`} />)}
+            {existingImages.map((image, index) => <div className="image-preview-item" key={image.id}>
+              <img src={image.url} alt={`Current property photo ${index + 1}`} />
+              <button type="button" className="image-remove-button" aria-label={`Remove current property photo ${index + 1}`}
+                title="Remove this photo" disabled={submitting || deletingImage}
+                onClick={() => setImageToDelete(image)}><X size={15} /></button>
+            </div>)}
           </div>}
           <label className="upload-box">
             <ImagePlus size={23} />
-            <strong>{files.length ? `${files.length} image${files.length === 1 ? "" : "s"} selected` : "Choose photos"}</strong>
+            <strong>{files.length ? `${files.length} new image${files.length === 1 ? "" : "s"} selected` : "Choose photos"}</strong>
             <span>Images are stored with the configured image provider.</span>
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple
-              ref={imageInput} disabled={existingImages.length >= 12} onChange={selectImages} />
+              ref={imageInput} disabled={submitting || existingImages.length + files.length >= 12 || files.length >= 8}
+              onChange={selectImages} />
           </label>
           {!!previews.length && <div className="image-preview-grid selected-image-previews" aria-label="Selected photos">
-            {previews.map((preview, index) => <img key={preview} src={preview} alt={`Selected property photo ${index + 1}`} />)}
+            {previews.map((preview, index) => <div className="image-preview-item" key={preview}>
+              <img src={preview} alt={`Selected property photo ${index + 1}`} />
+              <button type="button" className="image-remove-button" aria-label={`Remove selected photo ${index + 1}`}
+                title="Remove this photo" disabled={submitting} onClick={() => removeSelectedImage(index)}>
+                <X size={15} />
+              </button>
+            </div>)}
           </div>}
-          {!!files.length && <button type="button" className="btn btn-secondary" onClick={clearSelectedImages}>
+          {!!files.length && <button type="button" className="btn btn-secondary" disabled={submitting} onClick={clearSelectedImages}>
             Clear selected photos
           </button>}
           {uploadProgress !== null && <div className="upload-progress">
@@ -278,6 +330,10 @@ export default function OwnerPropertyFormPage({ editing = false }: { editing?: b
             {submitting ? uploadProgress !== null ? "Uploading photos..." : "Saving..." : editing ? "Save changes" : "Publish listing"}
           </button></div>
       </form>
+      {imageToDelete && <ConfirmDialog title="Remove this photo?"
+        message="This photo will be removed from the listing and cannot be restored."
+        confirmLabel="Remove photo" danger busy={deletingImage}
+        onCancel={() => setImageToDelete(null)} onConfirm={() => void removeExistingImage()} />}
     </PageContainer>
   );
 }

@@ -29,10 +29,11 @@ Login body: `{ "email": "sam@example.com", "password": "StrongPass123!", "role":
 | PATCH | `/properties/:id` | Update an owned listing | Owner |
 | DELETE | `/properties/:id` | Delete an owned listing | Owner |
 | POST | `/properties/:id/images` | Upload listing images | Owner |
+| DELETE | `/properties/:id/images/:imageId` | Remove an image from an owned listing | Owner |
 
 Supported list query parameters include `search`, `propertyType`, `listingType`, `location`, `minPrice`, `maxPrice`, `bedrooms`, `bathrooms`, `page`, and `limit`.
 
-Property create/update fields: `title`, `description`, `propertyType`, `listingType`, `price` (NGN amount), `location`, `address`, `bedrooms`, `bathrooms`, and optional `features`. Create/update accepts JSON; image upload uses multipart field `images` (up to 8 files, 5 MB each).
+Property create/update fields: `title`, `description`, `propertyType`, `listingType`, `price` (NGN amount), `location`, `address`, `bedrooms`, `bathrooms`, and optional `features`. Create/update accepts JSON; image upload uses multipart field `images` (up to 8 files, 5 MB each). Owners can add photos to existing listings and remove individual photos.
 
 ## Inquiries
 

@@ -211,4 +211,49 @@ router.post("/:id/images", ...ownerOnly, imageUpload.array("images", 8), asyncHa
   }
 }));
 
+router.delete("/:id/images/:imageId", ...ownerOnly, asyncHandler(async (request, response) => {
+  const id = validateId(request.params.id);
+  const imageId = validateId(request.params.imageId);
+  const { id: ownerId } = getAuthUser(request);
+  const image = await prisma.propertyImage.findUnique({
+    where: { id: imageId },
+    include: { property: { select: { id: true, ownerId: true } } }
+  });
+  if (!image || image.propertyId !== id) throw new HttpError(404, "Property image not found");
+  if (image.property.ownerId !== ownerId) {
+    throw new HttpError(403, "You can only remove images from your own listings");
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.propertyImage.delete({ where: { id: imageId } });
+    const remainingImages = await transaction.propertyImage.findMany({
+      where: { propertyId: id },
+      select: { id: true },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }, { id: "asc" }]
+    });
+    await Promise.all(remainingImages.map((remainingImage, position) =>
+      transaction.propertyImage.update({
+        where: { id: remainingImage.id },
+        data: { position }
+      })
+    ));
+  });
+
+  let cleanupWarning = false;
+  try {
+    await deleteImage(image.publicId);
+  } catch (error) {
+    cleanupWarning = true;
+    console.error(`Image ${imageId} was removed from property ${id}, but provider cleanup failed`, error);
+  }
+
+  sendSuccess(
+    response,
+    cleanupWarning
+      ? "The image was removed from the listing, but its stored file could not be cleaned up"
+      : "The image was removed from the listing",
+    { imageId, cleanupWarning }
+  );
+}));
+
 export default router;

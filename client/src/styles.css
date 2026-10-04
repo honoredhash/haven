@@ -1902,6 +1902,40 @@ textarea:focus-visible {
   object-fit: cover;
 }
 
+.image-preview-item {
+  position: relative;
+  min-width: 0;
+}
+
+.image-preview-item img {
+  display: block;
+}
+
+.image-remove-button {
+  position: absolute;
+  top: .35rem;
+  right: .35rem;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(32 39 30 / 82%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.image-remove-button:hover:not(:disabled),
+.image-remove-button:focus-visible {
+  background: #a33f35;
+}
+
+.image-remove-button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
 .selected-image-previews {
   margin-top: .75rem;
 }

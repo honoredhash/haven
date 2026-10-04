@@ -67,7 +67,7 @@ export default function PropertyDetailsPage() {
       <Link to="/properties" className="back-link"><ArrowLeft size={16} /> Back to homes</Link>
       <div className="detail-gallery">
         {currentImage ? <img className="detail-main-image" src={currentImage.url} alt={property.title} /> :
-          <div className="detail-image-placeholder"><span>HAVEN HOME</span></div>}
+          <div className="detail-image-placeholder"><span>Photo not available</span></div>}
         <span className="listing-badge">{property.listingType === "RENT" ? "FOR RENT" : "FOR SALE"}</span>
         {images.length > 1 && (
           <>
@@ -98,8 +98,8 @@ export default function PropertyDetailsPage() {
             <span><BedDouble /> {property.bedrooms} bedrooms</span><span><Bath /> {property.bathrooms} bathrooms</span>
             <span>{property.listingType === "RENT" ? "Available to rent" : "Available for sale"}</span>
           </div>
-          <section className="detail-section"><h2>About this home</h2><p>{property.description}</p></section>
-          {property.features?.length > 0 && <section className="detail-section"><h2>What makes it special</h2>
+          <section className="detail-section"><h2>About this property</h2><p>{property.description}</p></section>
+          {property.features?.length > 0 && <section className="detail-section"><h2>Features</h2>
             <ul className="features-list">{property.features.map((feature) => <li key={feature}><Check size={16} />{feature}</li>)}</ul>
           </section>}
           <section className="owner-card"><div className="owner-avatar">{property.owner.name.charAt(0).toUpperCase()}</div>
@@ -107,7 +107,7 @@ export default function PropertyDetailsPage() {
               <span>Property owner</span></div></section>
         </article>
         <aside className="inquiry-card">
-          <span className="section-kicker">INTERESTED?</span><h2>Ask about this home.</h2>
+          <span className="section-kicker">CONTACT OWNER</span><h2>Ask about this property</h2>
           {message && <SuccessMessage>{message}</SuccessMessage>}
           {inquiryError && <ErrorMessage>{inquiryError}</ErrorMessage>}
           {user?.role === "SEEKER" ? (

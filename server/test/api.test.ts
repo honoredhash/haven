@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import jwt from "jsonwebtoken";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import app from "../src/app.js";
 import {
+  loginSchema,
   propertyQuerySchema,
   propertySchema,
   registerSchema
@@ -80,16 +82,43 @@ test("malformed JSON and property IDs return bad-request envelopes", async () =>
   assert.equal(invalidFiltersResponse.data, null);
 });
 
-test("registration normalizes email and defaults to seeker", () => {
+test("malformed inquiry IDs return a bad-request envelope", async () => {
+  const secret = process.env.JWT_SECRET ?? "test-only-jwt-secret-with-at-least-32-characters";
+  process.env.JWT_SECRET = secret;
+  const token = jwt.sign({ role: "OWNER" }, secret, { subject: "test-owner" });
+  const response = await fetch(`${baseUrl}/api/inquiries/not-valid`, {
+    method: "PATCH",
+    headers: { Cookie: `session=${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "CLOSED" })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.success, false);
+  assert.equal(body.message, "Inquiry ID is invalid");
+  assert.equal(body.data, null);
+});
+
+test("registration and login normalize email and require an account role", () => {
   const input = registerSchema.parse({
     name: "Sam Lee",
     email: "SAM@EXAMPLE.COM",
-    password: "StrongPassword123!"
+    password: "StrongPassword123!",
+    role: "SEEKER"
   });
 
   assert.equal(input.email, "sam@example.com");
   assert.equal(input.role, "SEEKER");
+  assert.equal(registerSchema.safeParse({ ...input, role: undefined }).success, false);
   assert.equal(registerSchema.safeParse({ ...input, password: "short" }).success, false);
+  const login = loginSchema.parse({
+    email: "SAM@EXAMPLE.COM",
+    password: "StrongPassword123!",
+    role: "OWNER"
+  });
+  assert.equal(login.email, "sam@example.com");
+  assert.equal(login.role, "OWNER");
+  assert.equal(loginSchema.safeParse({ ...login, role: undefined }).success, false);
 });
 
 test("property filters apply defaults and reject reversed price ranges", () => {

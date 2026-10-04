@@ -14,9 +14,9 @@ Errors use the same envelope. Authentication uses an HTTP-only JWT cookie; send 
 | POST | `/auth/logout` | Clear the session cookie | No |
 | GET | `/auth/me` | Return the current user | Yes |
 
-Registration body: `{ "name": "Sam Lee", "email": "sam@example.com", "password": "StrongPass123!", "role": "SEEKER" }`. `role` may be `SEEKER` or `OWNER`.
+Registration body: `{ "name": "Sam Lee", "email": "sam@example.com", "password": "StrongPass123!", "role": "SEEKER" }`. `role` is required and may be `SEEKER` or `OWNER`. An email may have one account for each role; duplicate registrations for the same email and role return `409`.
 
-Login body: `{ "email": "sam@example.com", "password": "StrongPass123!" }`.
+Login body: `{ "email": "sam@example.com", "password": "StrongPass123!", "role": "SEEKER" }`. Login authenticates the selected email/role pair. If the email is registered only under the other role, the API responds with `403` and instructs the user to register for the selected account type.
 
 ## Properties
 

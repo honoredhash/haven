@@ -5,7 +5,7 @@ import { HttpError } from "../lib/http-error.js";
 
 type SessionToken = {
   sub: string;
-  role: UserRole;
+  role: "OWNER" | "SEEKER";
 };
 
 export function requireAuth(

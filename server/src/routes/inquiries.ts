@@ -9,6 +9,12 @@ import { inquirySchema, inquiryStatusSchema, propertyIdSchema } from "../schemas
 const userRouter = Router();
 const ownerRouter = Router();
 
+function validateInquiryId(value: string | string[]) {
+  const result = propertyIdSchema.safeParse(typeof value === "string" ? value : "");
+  if (!result.success) throw new HttpError(400, "Inquiry ID is invalid");
+  return result.data;
+}
+
 userRouter.post(
   "/properties/:id/inquiries",
   requireAuth,
@@ -75,7 +81,7 @@ ownerRouter.get("/owner/inquiries", requireAuth, requireRole("OWNER"), asyncHand
 }));
 
 ownerRouter.patch("/inquiries/:id", requireAuth, requireRole("OWNER"), asyncHandler(async (request, response) => {
-  const id = propertyIdSchema.parse(request.params.id);
+  const id = validateInquiryId(request.params.id);
   const { id: ownerId } = getAuthUser(request);
   const input = inquiryStatusSchema.parse(request.body);
   const inquiry = await prisma.inquiry.findUnique({

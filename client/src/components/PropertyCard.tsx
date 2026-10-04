@@ -1,4 +1,4 @@
-import { Bath, BedDouble, MapPin, MoveUpRight } from "lucide-react";
+import { Bath, BedDouble, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Property } from "../services/api";
 export function formatPrice(price: number) {
@@ -16,12 +16,11 @@ export function PropertyCard({ property }: { property: Property }) {
     <article className="property-card">
       <Link className="property-card-image" to={`/properties/${property.id}`} aria-label={`View ${property.title}`}>
         {imageUrl ? (
-          <img src={imageUrl} alt={property.title} loading="lazy" />
+          <img src={imageUrl} alt="" loading="lazy" />
         ) : (
-          <div className="property-placeholder"><span>HAVEN HOME</span></div>
+          <div className="property-placeholder"><span>Photo not available</span></div>
         )}
         <span className="listing-badge">{property.listingType === "RENT" ? "FOR RENT" : "FOR SALE"}</span>
-        <span className="card-arrow"><MoveUpRight size={17} /></span>
       </Link>
       <div className="property-card-body">
         <p className="property-card-price">{formatPrice(property.price)}</p>
@@ -32,6 +31,7 @@ export function PropertyCard({ property }: { property: Property }) {
           <span><Bath size={16} /> {property.bathrooms} baths</span>
           <span>{property.propertyType.replace("_", " ").toLowerCase()}</span>
         </div>
+        <Link className="property-card-action" to={`/properties/${property.id}`}>View property</Link>
       </div>
     </article>
   );

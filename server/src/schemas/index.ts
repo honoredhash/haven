@@ -15,12 +15,13 @@ export const registerSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
   password: z.string().min(10).max(72),
-  role: z.enum(["SEEKER", "OWNER"]).default("SEEKER")
+  role: z.enum(["SEEKER", "OWNER"])
 });
 
 export const loginSchema = z.object({
   email: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
-  password: z.string().min(1).max(72)
+  password: z.string().min(1).max(72),
+  role: z.enum(["SEEKER", "OWNER"])
 });
 
 const propertyFieldsSchema = z.object({

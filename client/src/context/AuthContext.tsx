@@ -6,7 +6,7 @@ import type { User } from "../services/api";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, role: User["role"]) => Promise<User>;
   register: (name: string, email: string, password: string, role: User["role"]) => Promise<User>;
   logout: () => Promise<void>;
 }
@@ -29,8 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     user,
     loading,
-    async login(email, password) {
-      const result = await apiRequest<{ user: User }>(api.post("/auth/login", { email, password }));
+    async login(email, password, role) {
+      const result = await apiRequest<{ user: User }>(api.post("/auth/login", { email, password, role }));
       setUser(result.user);
       return result.user;
     },

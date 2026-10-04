@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { api, apiRequest, getErrorMessage } from "../services/api";
 import type { Inquiry, Property } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorMessage, LoadingState, SuccessMessage } from "../components/Feedback";
 import { formatPrice, PropertyCard } from "../components/PropertyCard";
 import { PageContainer } from "../components/SiteLayout";
@@ -107,7 +108,9 @@ export function OwnerDashboard() {
         {!!inquiries.length && <div className="inquiry-list">{inquiries.slice(0, 3).map((inquiry) =>
           <article className="inquiry-row" key={inquiry.id}><div className="owner-avatar">{inquiry.user?.name.charAt(0)}</div>
             <div className="inquiry-main"><strong>{inquiry.user?.name} · {inquiry.property.title}</strong>
-              <span>{inquiry.message}</span><time dateTime={inquiry.createdAt}>{new Date(inquiry.createdAt).toLocaleDateString()}</time></div>
+              <a href={`mailto:${inquiry.user?.email}?subject=${encodeURIComponent(`Re: ${inquiry.property.title}`)}`}>
+                Reply by email: {inquiry.user?.email}</a><span>{inquiry.message}</span>
+              <time dateTime={inquiry.createdAt}>{new Date(inquiry.createdAt).toLocaleDateString()}</time></div>
             <span className={`status-pill status-${inquiry.status.toLowerCase()}`}>{inquiry.status.toLowerCase()}</span></article>)}</div>}
         {!loading && !error && !inquiries.length && <p className="muted-copy">Inquiries from seekers will show up here.</p>}
       </section>
@@ -119,7 +122,8 @@ export function OwnerListings() {
   const [items, setItems] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deleting, setDeleting] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const location = useLocation();
   const [notice, setNotice] = useState<string>(location.state?.notice ?? "");
   const load = useCallback(() => {
@@ -132,17 +136,18 @@ export function OwnerListings() {
   useEffect(load, [load]);
 
   async function removeProperty(property: Property) {
-    if (!window.confirm(`Delete “${property.title}”? This cannot be undone.`)) return;
-    setDeleting(property.id);
+    setDeleting(true);
     setError("");
     try {
       await apiRequest(api.delete(`/properties/${property.id}`));
       setItems((current) => current.filter((item) => item.id !== property.id));
       setNotice("Property listing deleted.");
+      setPropertyToDelete(null);
     } catch (reason) {
       setError(getErrorMessage(reason));
+      setPropertyToDelete(null);
     } finally {
-      setDeleting("");
+      setDeleting(false);
     }
   }
 
@@ -167,11 +172,20 @@ export function OwnerListings() {
           <div className="owner-listing-actions"><Link to={`/owner/properties/${property.id}/edit`}><Pencil size={15} /> Edit listing</Link>
             {property.status === "PUBLISHED" ? <Link to={`/properties/${property.id}`}>Preview <ArrowRight size={15} /></Link>
               : <span className="muted-copy">Not public yet</span>}
-            <button disabled={deleting === property.id} onClick={() => void removeProperty(property)}>
-              <Trash2 size={15} /> {deleting === property.id ? "Deleting..." : "Delete"}
+            <button disabled={deleting} onClick={() => setPropertyToDelete(property)}>
+              <Trash2 size={15} /> {deleting && propertyToDelete?.id === property.id ? "Deleting..." : "Delete"}
             </button></div>
         </article>
       ))}</div>
+      {propertyToDelete && <ConfirmDialog
+        title="Delete this listing?"
+        message={`“${propertyToDelete.title}” and its inquiries will be permanently deleted. This action cannot be undone.`}
+        confirmLabel="Delete listing"
+        busy={deleting}
+        danger
+        onCancel={() => setPropertyToDelete(null)}
+        onConfirm={() => void removeProperty(propertyToDelete)}
+      />}
     </PageContainer>
   );
 }

@@ -38,7 +38,7 @@ export default function OwnerInquiriesPage() {
   return (
     <PageContainer>
       <div className="page-heading dashboard-heading"><span className="section-kicker">OWNER SPACE</span>
-        <h1>Conversations with seekers.</h1><p>Every inquiry is a chance to help someone find their next home.</p></div>
+        <h1>Property inquiries</h1><p>Reply to seekers directly by email, then keep each inquiry’s status up to date.</p></div>
       {notice && <SuccessMessage>{notice}</SuccessMessage>}
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {loading && <LoadingState label="Loading inquiries..." />}
@@ -50,7 +50,8 @@ export default function OwnerInquiriesPage() {
           <div className="owner-avatar">{inquiry.user?.name.charAt(0).toUpperCase()}</div>
           <div className="inquiry-main"><strong>{inquiry.user?.name} asked about
             <Link to={`/properties/${inquiry.property.id}`}> {inquiry.property.title}</Link></strong>
-            <span>{inquiry.user?.email} · {inquiry.property.location}</span><p>{inquiry.message}</p>
+            <span><a href={`mailto:${inquiry.user?.email}?subject=${encodeURIComponent(`Re: ${inquiry.property.title}`)}`}>
+              Reply by email: {inquiry.user?.email}</a> · {inquiry.property.location}</span><p>{inquiry.message}</p>
             <time dateTime={inquiry.createdAt}>{new Date(inquiry.createdAt).toLocaleDateString()}</time></div>
           <div className="inquiry-status-control"><span className={`status-pill status-${inquiry.status.toLowerCase()}`}>{inquiry.status.toLowerCase()}</span>
             <label className="visually-hidden" htmlFor={`status-${inquiry.id}`}>Update inquiry status</label>

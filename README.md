@@ -103,4 +103,14 @@ Develop features on focused branches (for example, `feature/authentication`) and
 
 ## Deployment
 
-Build with `npm run build`, provide production environment variables, run Prisma migrations as a deployment step, and serve the built client from a static host or configured web server. Deploy the API with HTTPS, set `CLIENT_URL` to the deployed client origin, use a strong random `JWT_SECRET`, and provide Cloudinary credentials for image uploads.
+This repository can be deployed as one Vercel project from the repository root. The Vite client is built to `client/dist`; API requests are served by the Express function in `api/[...path].ts`, and client-side routes fall back to `index.html`.
+
+Configure these Vercel environment variables before production deployment:
+
+- `DATABASE_URL`: PostgreSQL connection string
+- `JWT_SECRET`: random secret of at least 32 characters
+- `CLIENT_URL`: deployed site origin
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`: needed for image uploads
+- `VITE_API_URL`: set to `/api` (or leave unset; this is the client default)
+
+The `vercel-build` script generates Prisma Client and builds both workspaces. Apply pending Prisma migrations to the production database with `npx prisma migrate deploy --schema server/prisma/schema.prisma` before using the deployed app. Never add production credentials to the repository.

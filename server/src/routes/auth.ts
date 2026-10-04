@@ -38,8 +38,10 @@ router.post("/register", authLimiter, asyncHandler(async (request, response) => 
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) throw new HttpError(500, "Authentication is not configured");
 
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new HttpError(409, "An account with this email already exists");
+  const existing = await prisma.user.findUnique({
+    where: { email_role: { email: input.email, role: input.role } }
+  });
+  if (existing) throw new HttpError(409, `An account with this email already exists for ${input.role === "SEEKER" ? "Find a Home" : "List a Property"}`);
 
   const user = await prisma.user.create({
     data: {
@@ -57,9 +59,22 @@ router.post("/register", authLimiter, asyncHandler(async (request, response) => 
 
 router.post("/login", authLimiter, asyncHandler(async (request, response) => {
   const input = loginSchema.parse(request.body);
-  const user = await prisma.user.findUnique({ where: { email: input.email } });
-  const isPasswordValid = user ? await bcrypt.compare(input.password, user.passwordHash) : false;
-  if (!user || !isPasswordValid) throw new HttpError(401, "Email or password is incorrect");
+  const user = await prisma.user.findUnique({
+    where: { email_role: { email: input.email, role: input.role } }
+  });
+  if (!user) {
+    const otherRoleAccount = await prisma.user.findFirst({
+      where: { email: input.email },
+      select: { id: true }
+    });
+    if (otherRoleAccount) {
+      const accountType = input.role === "SEEKER" ? "Find a Home" : "List a Property";
+      throw new HttpError(403, `This email is not registered as a ${accountType} account. Please sign up as a ${accountType} user first.`);
+    }
+    throw new HttpError(401, "Email or password is incorrect");
+  }
+  const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
+  if (!isPasswordValid) throw new HttpError(401, "Email or password is incorrect");
 
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) throw new HttpError(500, "Authentication is not configured");

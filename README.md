@@ -113,4 +113,4 @@ Configure these Vercel environment variables before production deployment:
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`: needed for image uploads
 - `VITE_API_URL`: set to `/api` (or leave unset; this is the client default)
 
-Vercel builds Prisma Client and the Express service in the server service’s build command. Apply pending Prisma migrations to the production database with `npx prisma migrate deploy --schema server/prisma/schema.prisma` before using the deployed app. The client calls the public `/api/` route, so no private Vercel service binding is required. Never add production credentials to the repository.
+Vercel generates Prisma Client, compiles the Express service, and bundles its ESM entrypoint in the server service’s build command. Apply pending Prisma migrations to the production database with `npx prisma migrate deploy --schema server/prisma/schema.prisma` before using the deployed app. The client calls the public `/api/` route, so no private Vercel service binding is required. Never add production credentials to the repository.

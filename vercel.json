@@ -17,9 +17,9 @@
     "server": {
       "root": "server",
       "framework": "express",
-      "entrypoint": "src/app.mts",
+      "entrypoint": "dist/vercel.mjs",
       "installCommand": "npm install",
-      "buildCommand": "npm run db:generate && npm run build"
+      "buildCommand": "npm run db:generate && npm run build && npm run build:vercel"
     }
   },
   "rewrites": [

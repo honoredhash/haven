@@ -16,10 +16,10 @@
     },
     "server": {
       "root": "server",
-      "framework": "other",
-      "entrypoint": "src/vercel.mjs",
+      "framework": "express",
+      "entrypoint": "src/app.mts",
       "installCommand": "npm install",
-      "buildCommand": "npm run db:generate && npm run build && npm run build:vercel"
+      "buildCommand": "npm run db:generate && npm run build"
     }
   },
   "rewrites": [

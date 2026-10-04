@@ -15,7 +15,18 @@ export const api = axios.create({
 
 export function getErrorMessage(error: unknown) {
   if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data.message ?? "We couldn't complete that request. Please try again.";
+    const message = error.response?.data?.message;
+    if (typeof message === "string" && message.trim()) return message;
+    if (error.code === "ECONNABORTED") {
+      return "The request took too long. Please try again.";
+    }
+    if (!error.response) {
+      return "Haven couldn't reach the service. Check your connection and try again.";
+    }
+    if (error.response.status >= 500) {
+      return "Haven's service is temporarily unavailable. Please try again later.";
+    }
+    return "The service returned an unexpected response. Please try again.";
   }
   return "We couldn't complete that request. Please try again.";
 }

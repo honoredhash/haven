@@ -103,7 +103,7 @@ Develop features on focused branches (for example, `feature/authentication`) and
 
 ## Deployment
 
-This repository can be deployed as one Vercel project with two services. The `client` Vite service handles public frontend routes, and the `server` Express service handles public requests under `/api/`. The API receives the `/api` prefix unchanged, matching the Express routes and the client’s same-origin `/api` base URL. Client-side routes are handled by the Vite service.
+This repository can be deployed as one Vercel project with two services. The `client` Vite service handles public frontend routes, and the `server` Express service handles public requests under `/api/`. The API receives the `/api` prefix unchanged, matching the Express routes and the client’s same-origin `/api` base URL. Client-side routes are rewritten to the Vite app’s `index.html` so refreshing or opening a route such as `/login` works.
 
 Configure these Vercel environment variables before production deployment:
 

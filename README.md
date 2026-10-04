@@ -103,7 +103,7 @@ Develop features on focused branches (for example, `feature/authentication`) and
 
 ## Deployment
 
-This repository can be deployed as one Vercel project from the repository root. The Vite client is built to `client/dist`; API requests are served by the Express function in `api/[...path].ts`, and client-side routes fall back to `index.html`.
+This repository can be deployed as one Vercel project with two services. The `client` Vite service handles public frontend routes, and the `server` Express service handles public requests under `/api/`. The API receives the `/api` prefix unchanged, matching the Express routes and the client’s same-origin `/api` base URL. Client-side routes are handled by the Vite service.
 
 Configure these Vercel environment variables before production deployment:
 
@@ -113,4 +113,4 @@ Configure these Vercel environment variables before production deployment:
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`: needed for image uploads
 - `VITE_API_URL`: set to `/api` (or leave unset; this is the client default)
 
-The `vercel-build` script generates Prisma Client and builds both workspaces. Apply pending Prisma migrations to the production database with `npx prisma migrate deploy --schema server/prisma/schema.prisma` before using the deployed app. Never add production credentials to the repository.
+Vercel builds Prisma Client and the Express service in the server service’s build command. Apply pending Prisma migrations to the production database with `npx prisma migrate deploy --schema server/prisma/schema.prisma` before using the deployed app. The client calls the public `/api/` route, so no private Vercel service binding is required. Never add production credentials to the repository.

@@ -11,8 +11,7 @@
     "build": "npm run build --workspace server && npm run build --workspace client",
     "typecheck": "npm run typecheck --workspace server && npm run typecheck --workspace client",
     "lint": "npm run lint --workspace server && npm run lint --workspace client",
-    "test": "npm run test --workspace server",
-    "vercel-build": "npm run db:generate --workspace server && npm run build"
+    "test": "npm run test --workspace server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

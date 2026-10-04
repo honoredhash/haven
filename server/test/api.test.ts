@@ -3,7 +3,7 @@ import { after, before, test } from "node:test";
 import jwt from "jsonwebtoken";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
-import app from "../src/app.js";
+import app from "../src/app.mjs";
 import {
   loginSchema,
   propertyQuerySchema,
